@@ -60,7 +60,7 @@ If you want to use older versions, you can try using older releases of this shar
 #### SDL header versions
 
 * SDL: release-3.4.0
-* SDL-image: release-3.4.4
+* SDL-image: release-3.4.0
 * SDL-mixer: release-3.2.0
 * SDL-ttf: release-3.2.2
 
