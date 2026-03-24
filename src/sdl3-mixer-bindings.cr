@@ -17,9 +17,10 @@ lib LibSDL
   # SDL_mixer
 
   MIXER_MAJOR_VERSION = 3
-  MIXER_MINOR_VERSION = 1
+  MIXER_MINOR_VERSION = 2
   MIXER_MICRO_VERSION = 0
   MIXER_VERSION = (((MIXER_MAJOR_VERSION)*1000000 + (MIXER_MINOR_VERSION)*1000 + (MIXER_MICRO_VERSION)))
+  MIX_PROP_MIXER_DEVICE_NUMBER = "SDL_mixer.mixer.device"
   MIX_PROP_AUDIO_LOAD_IOSTREAM_POINTER = "SDL_mixer.audio.load.iostream"
   MIX_PROP_AUDIO_LOAD_CLOSEIO_BOOLEAN = "SDL_mixer.audio.load.closeio"
   MIX_PROP_AUDIO_LOAD_PREDECODE_BOOLEAN = "SDL_mixer.audio.load.predecode"
@@ -46,8 +47,10 @@ lib LibSDL
   MIX_PROP_PLAY_LOOP_START_MILLISECOND_NUMBER = "SDL_mixer.play.loop_start_millisecond"
   MIX_PROP_PLAY_FADE_IN_FRAMES_NUMBER = "SDL_mixer.play.fade_in_frames"
   MIX_PROP_PLAY_FADE_IN_MILLISECONDS_NUMBER = "SDL_mixer.play.fade_in_milliseconds"
+  MIX_PROP_PLAY_FADE_IN_START_GAIN_FLOAT = "SDL_mixer.play.fade_in_start_gain"
   MIX_PROP_PLAY_APPEND_SILENCE_FRAMES_NUMBER = "SDL_mixer.play.append_silence_frames"
   MIX_PROP_PLAY_APPEND_SILENCE_MILLISECONDS_NUMBER = "SDL_mixer.play.append_silence_milliseconds"
+  MIX_PROP_PLAY_HALT_WHEN_EXHAUSTED_BOOLEAN = "SDL_mixer.play.halt_when_exhausted"
 
   type MixMixer = Void
   type MixAudio = Void
@@ -76,13 +79,16 @@ lib LibSDL
   fun mix_destroy_mixer = MIX_DestroyMixer(mixer : MixMixer*) : Void
   fun mix_get_mixer_properties = MIX_GetMixerProperties(mixer : MixMixer*) : PropertiesID
   fun mix_get_mixer_format = MIX_GetMixerFormat(mixer : MixMixer*, spec : AudioSpec*) : CBool
+  fun mix_lock_mixer = MIX_LockMixer(mixer : MixMixer*) : Void
+  fun mix_unlock_mixer = MIX_UnlockMixer(mixer : MixMixer*) : Void
   fun mix_load_audio_io = MIX_LoadAudio_IO(mixer : MixMixer*, io : IOStream*, predecode : CBool, closeio : CBool) : MixAudio*
   fun mix_load_audio = MIX_LoadAudio(mixer : MixMixer*, path : LibC::Char*, predecode : CBool) : MixAudio*
+  fun mix_load_audio_no_copy = MIX_LoadAudioNoCopy(mixer : MixMixer*, data : Void*, datalen : LibC::SizeT, free_when_done : CBool) : MixAudio*
   fun mix_load_audio_with_properties = MIX_LoadAudioWithProperties(props : PropertiesID) : MixAudio*
   fun mix_load_raw_audio_io = MIX_LoadRawAudio_IO(mixer : MixMixer*, io : IOStream*, spec : AudioSpec*, closeio : CBool) : MixAudio*
   fun mix_load_raw_audio = MIX_LoadRawAudio(mixer : MixMixer*, data : Void*, datalen : LibC::SizeT, spec : AudioSpec*) : MixAudio*
   fun mix_load_raw_audio_no_copy = MIX_LoadRawAudioNoCopy(mixer : MixMixer*, data : Void*, datalen : LibC::SizeT, spec : AudioSpec*, free_when_done : CBool) : MixAudio*
-  fun mix_create_sine_wave_audio = MIX_CreateSineWaveAudio(mixer : MixMixer*, hz : LibC::Int, amplitude : LibC::Float) : MixAudio*
+  fun mix_create_sine_wave_audio = MIX_CreateSineWaveAudio(mixer : MixMixer*, hz : LibC::Int, amplitude : LibC::Float, ms : Int64) : MixAudio*
   fun mix_get_audio_properties = MIX_GetAudioProperties(audio : MixAudio*) : PropertiesID
   fun mix_get_audio_duration = MIX_GetAudioDuration(audio : MixAudio*) : Int64
   fun mix_get_audio_format = MIX_GetAudioFormat(audio : MixAudio*, spec : AudioSpec*) : CBool
@@ -97,9 +103,13 @@ lib LibSDL
   fun mix_set_track_raw_iostream = MIX_SetTrackRawIOStream(track : MixTrack*, io : IOStream*, spec : AudioSpec*, closeio : CBool) : CBool
   fun mix_tag_track = MIX_TagTrack(track : MixTrack*, tag : LibC::Char*) : CBool
   fun mix_untag_track = MIX_UntagTrack(track : MixTrack*, tag : LibC::Char*) : Void
+  fun mix_get_track_tags = MIX_GetTrackTags(track : MixTrack*, count : LibC::Int*) : LibC::Char**
+  fun mix_get_tagged_tracks = MIX_GetTaggedTracks(mixer : MixMixer*, tag : LibC::Char*, count : LibC::Int*) : MixTrack**
   fun mix_set_track_playback_position = MIX_SetTrackPlaybackPosition(track : MixTrack*, frames : Int64) : CBool
   fun mix_get_track_playback_position = MIX_GetTrackPlaybackPosition(track : MixTrack*) : Int64
-  fun mix_track_looping = MIX_TrackLooping(track : MixTrack*) : CBool
+  fun mix_get_track_fade_frames = MIX_GetTrackFadeFrames(track : MixTrack*) : Int64
+  fun mix_get_track_loops = MIX_GetTrackLoops(track : MixTrack*) : LibC::Int
+  fun mix_set_track_loops = MIX_SetTrackLoops(track : MixTrack*, num_loops : LibC::Int) : CBool
   fun mix_get_track_audio = MIX_GetTrackAudio(track : MixTrack*) : MixAudio*
   fun mix_get_track_audio_stream = MIX_GetTrackAudioStream(track : MixTrack*) : AudioStream*
   fun mix_get_track_remaining = MIX_GetTrackRemaining(track : MixTrack*) : Int64
@@ -123,11 +133,13 @@ lib LibSDL
   fun mix_resume_tag = MIX_ResumeTag(mixer : MixMixer*, tag : LibC::Char*) : CBool
   fun mix_track_playing = MIX_TrackPlaying(track : MixTrack*) : CBool
   fun mix_track_paused = MIX_TrackPaused(track : MixTrack*) : CBool
-  fun mix_set_master_gain = MIX_SetMasterGain(mixer : MixMixer*, gain : LibC::Float) : CBool
-  fun mix_get_master_gain = MIX_GetMasterGain(mixer : MixMixer*) : LibC::Float
+  fun mix_set_mixer_gain = MIX_SetMixerGain(mixer : MixMixer*, gain : LibC::Float) : CBool
+  fun mix_get_mixer_gain = MIX_GetMixerGain(mixer : MixMixer*) : LibC::Float
   fun mix_set_track_gain = MIX_SetTrackGain(track : MixTrack*, gain : LibC::Float) : CBool
   fun mix_get_track_gain = MIX_GetTrackGain(track : MixTrack*) : LibC::Float
   fun mix_set_tag_gain = MIX_SetTagGain(mixer : MixMixer*, tag : LibC::Char*, gain : LibC::Float) : CBool
+  fun mix_set_mixer_frequency_ratio = MIX_SetMixerFrequencyRatio(mixer : MixMixer*, ratio : LibC::Float) : CBool
+  fun mix_get_mixer_frequency_ratio = MIX_GetMixerFrequencyRatio(mixer : MixMixer*) : LibC::Float
   fun mix_set_track_frequency_ratio = MIX_SetTrackFrequencyRatio(track : MixTrack*, ratio : LibC::Float) : CBool
   fun mix_get_track_frequency_ratio = MIX_GetTrackFrequencyRatio(track : MixTrack*) : LibC::Float
   fun mix_set_track_output_channel_map = MIX_SetTrackOutputChannelMap(track : MixTrack*, chmap : LibC::Int*, count : LibC::Int) : CBool
@@ -144,7 +156,7 @@ lib LibSDL
   fun mix_set_track_cooked_callback = MIX_SetTrackCookedCallback(track : MixTrack*, cb : MixTrackMixCallback, userdata : Void*) : CBool
   fun mix_set_group_post_mix_callback = MIX_SetGroupPostMixCallback(group : MixGroup*, cb : MixGroupMixCallback, userdata : Void*) : CBool
   fun mix_set_post_mix_callback = MIX_SetPostMixCallback(mixer : MixMixer*, cb : MixPostMixCallback, userdata : Void*) : CBool
-  fun mix_generate = MIX_Generate(mixer : MixMixer*, buffer : Void*, buflen : LibC::Int) : CBool
+  fun mix_generate = MIX_Generate(mixer : MixMixer*, buffer : Void*, buflen : LibC::Int) : LibC::Int
   fun mix_create_audio_decoder = MIX_CreateAudioDecoder(path : LibC::Char*, props : PropertiesID) : MixAudioDecoder*
   fun mix_create_audio_decoder_io = MIX_CreateAudioDecoder_IO(io : IOStream*, closeio : CBool, props : PropertiesID) : MixAudioDecoder*
   fun mix_destroy_audio_decoder = MIX_DestroyAudioDecoder(audiodecoder : MixAudioDecoder*) : Void

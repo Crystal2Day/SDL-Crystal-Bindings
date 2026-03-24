@@ -14,8 +14,8 @@ lib LibSDL
   # SDL_version
 
   MAJOR_VERSION = 3
-  MINOR_VERSION = 3
-  MICRO_VERSION = 2
+  MINOR_VERSION = 4
+  MICRO_VERSION = 0
   VERSION = (((MAJOR_VERSION)*1000000 + (MINOR_VERSION)*1000 + (MICRO_VERSION)))
 
   fun get_version = SDL_GetVersion() : LibC::Int
@@ -1358,6 +1358,8 @@ lib LibSDL
   PROP_GPU_DEVICE_CREATE_SHADERS_METALLIB_BOOLEAN = "SDL.gpu.device.create.shaders.metallib"
   PROP_GPU_DEVICE_CREATE_D3D12_ALLOW_FEWER_RESOURCE_SLOTS_BOOLEAN = "SDL.gpu.device.create.d3d12.allowtier1resourcebinding"
   PROP_GPU_DEVICE_CREATE_D3D12_SEMANTIC_NAME_STRING = "SDL.gpu.device.create.d3d12.semantic"
+  PROP_GPU_DEVICE_CREATE_VULKAN_REQUIRE_HARDWARE_ACCELERATION_BOOLEAN = "SDL.gpu.device.create.vulkan.requirehardwareacceleration"
+  PROP_GPU_DEVICE_CREATE_VULKAN_OPTIONS_POINTER = "SDL.gpu.device.create.vulkan.options"
   PROP_GPU_DEVICE_NAME_STRING = "SDL.gpu.device.name"
   PROP_GPU_DEVICE_DRIVER_NAME_STRING = "SDL.gpu.device.driver_name"
   PROP_GPU_DEVICE_DRIVER_VERSION_STRING = "SDL.gpu.device.driver_version"
@@ -2063,6 +2065,16 @@ lib LibSDL
     padding3 : UInt8
   end
 
+  struct GPUVulkanOptions
+    vulkan_api_version : UInt32
+    feature_list : Void*
+    vulkan_10_physical_device_features : Void*
+    device_extension_count : UInt32
+    device_extension_names : LibC::Char**
+    instance_extension_count : UInt32
+    instance_extension_names : LibC::Char**
+  end
+
   fun gpusupports_shader_formats = SDL_GPUSupportsShaderFormats(format_flags : GPUShaderFormat, name : LibC::Char*) : CBool
   fun gpusupports_properties = SDL_GPUSupportsProperties(props : PropertiesID) : CBool
   fun create_gpudevice = SDL_CreateGPUDevice(format_flags : GPUShaderFormat, debug_mode : CBool, name : LibC::Char*) : GPUDevice*
@@ -2384,7 +2396,6 @@ lib LibSDL
   HINT_EMSCRIPTEN_ASYNCIFY = "SDL_EMSCRIPTEN_ASYNCIFY"
   HINT_EMSCRIPTEN_CANVAS_SELECTOR = "SDL_EMSCRIPTEN_CANVAS_SELECTOR"
   HINT_EMSCRIPTEN_KEYBOARD_ELEMENT = "SDL_EMSCRIPTEN_KEYBOARD_ELEMENT"
-  HINT_EMSCRIPTEN_FILL_DOCUMENT = "SDL_EMSCRIPTEN_FILL_DOCUMENT"
   HINT_ENABLE_SCREEN_KEYBOARD = "SDL_ENABLE_SCREEN_KEYBOARD"
   HINT_EVDEV_DEVICES = "SDL_EVDEV_DEVICES"
   HINT_EVENT_LOGGING = "SDL_EVENT_LOGGING"
@@ -2402,6 +2413,7 @@ lib LibSDL
   HINT_GDK_TEXTINPUT_SCOPE = "SDL_GDK_TEXTINPUT_SCOPE"
   HINT_GDK_TEXTINPUT_TITLE = "SDL_GDK_TEXTINPUT_TITLE"
   HINT_HIDAPI_LIBUSB = "SDL_HIDAPI_LIBUSB"
+  HINT_HIDAPI_LIBUSB_GAMECUBE = "SDL_HIDAPI_LIBUSB_GAMECUBE"
   HINT_HIDAPI_LIBUSB_WHITELIST = "SDL_HIDAPI_LIBUSB_WHITELIST"
   HINT_HIDAPI_UDEV = "SDL_HIDAPI_UDEV"
   HINT_GPU_DRIVER = "SDL_GPU_DRIVER"
@@ -2488,11 +2500,13 @@ lib LibSDL
   HINT_MAC_OPENGL_ASYNC_DISPATCH = "SDL_MAC_OPENGL_ASYNC_DISPATCH"
   HINT_MAC_OPTION_AS_ALT = "SDL_MAC_OPTION_AS_ALT"
   HINT_MAC_SCROLL_MOMENTUM = "SDL_MAC_SCROLL_MOMENTUM"
+  HINT_MAC_PRESS_AND_HOLD = "SDL_MAC_PRESS_AND_HOLD"
   HINT_MAIN_CALLBACK_RATE = "SDL_MAIN_CALLBACK_RATE"
   HINT_MOUSE_AUTO_CAPTURE = "SDL_MOUSE_AUTO_CAPTURE"
   HINT_MOUSE_DOUBLE_CLICK_RADIUS = "SDL_MOUSE_DOUBLE_CLICK_RADIUS"
   HINT_MOUSE_DOUBLE_CLICK_TIME = "SDL_MOUSE_DOUBLE_CLICK_TIME"
   HINT_MOUSE_DEFAULT_SYSTEM_CURSOR = "SDL_MOUSE_DEFAULT_SYSTEM_CURSOR"
+  HINT_MOUSE_DPI_SCALE_CURSORS = "SDL_MOUSE_DPI_SCALE_CURSORS"
   HINT_MOUSE_EMULATE_WARP_WITH_RELATIVE = "SDL_MOUSE_EMULATE_WARP_WITH_RELATIVE"
   HINT_MOUSE_FOCUS_CLICKTHROUGH = "SDL_MOUSE_FOCUS_CLICKTHROUGH"
   HINT_MOUSE_NORMAL_SPEED_SCALE = "SDL_MOUSE_NORMAL_SPEED_SCALE"
@@ -2590,6 +2604,7 @@ lib LibSDL
   HINT_WINDOWS_ENABLE_MESSAGELOOP = "SDL_WINDOWS_ENABLE_MESSAGELOOP"
   HINT_WINDOWS_GAMEINPUT = "SDL_WINDOWS_GAMEINPUT"
   HINT_WINDOWS_RAW_KEYBOARD = "SDL_WINDOWS_RAW_KEYBOARD"
+  HINT_WINDOWS_RAW_KEYBOARD_EXCLUDE_HOTKEYS = "SDL_WINDOWS_RAW_KEYBOARD_EXCLUDE_HOTKEYS"
   HINT_WINDOWS_FORCE_SEMAPHORE_KERNEL = "SDL_WINDOWS_FORCE_SEMAPHORE_KERNEL"
   HINT_WINDOWS_INTRESOURCE_ICON = "SDL_WINDOWS_INTRESOURCE_ICON"
   HINT_WINDOWS_INTRESOURCE_ICON_SMALL = "SDL_WINDOWS_INTRESOURCE_ICON_SMALL"
@@ -3501,6 +3516,7 @@ lib LibSDL
     BUTTON_4 = (1 << 4)
     BUTTON_5 = (1 << 5)
     ERASER_TIP = (1 << 30)
+    IN_PROXIMITY = (1 << 31)
   end
 
   enum PenAxis
@@ -4015,6 +4031,7 @@ lib LibSDL
   PROP_TEXTURE_CREATE_OPENGLES2_TEXTURE_U_NUMBER = "SDL.texture.create.opengles2.texture_u"
   PROP_TEXTURE_CREATE_OPENGLES2_TEXTURE_V_NUMBER = "SDL.texture.create.opengles2.texture_v"
   PROP_TEXTURE_CREATE_VULKAN_TEXTURE_NUMBER = "SDL.texture.create.vulkan.texture"
+  PROP_TEXTURE_CREATE_VULKAN_LAYOUT_NUMBER = "SDL.texture.create.vulkan.layout"
   PROP_TEXTURE_CREATE_GPU_TEXTURE_POINTER = "SDL.texture.create.gpu.texture"
   PROP_TEXTURE_CREATE_GPU_TEXTURE_UV_POINTER = "SDL.texture.create.gpu.texture_uv"
   PROP_TEXTURE_CREATE_GPU_TEXTURE_U_POINTER = "SDL.texture.create.gpu.texture_u"
@@ -4256,6 +4273,7 @@ lib LibSDL
   PROP_SURFACE_TONEMAP_OPERATOR_STRING = "SDL.surface.tonemap"
   PROP_SURFACE_HOTSPOT_X_NUMBER = "SDL.surface.hotspot.x"
   PROP_SURFACE_HOTSPOT_Y_NUMBER = "SDL.surface.hotspot.y"
+  PROP_SURFACE_ROTATION_FLOAT = "SDL.surface.rotation"
 
   @[Flags]
   enum SurfaceFlags : UInt32
@@ -4294,6 +4312,8 @@ lib LibSDL
   fun remove_surface_alternate_images = SDL_RemoveSurfaceAlternateImages(surface : Surface*) : Void
   fun lock_surface = SDL_LockSurface(surface : Surface*) : CBool
   fun unlock_surface = SDL_UnlockSurface(surface : Surface*) : Void
+  fun load_surface_io = SDL_LoadSurface_IO(src : IOStream*, closeio : CBool) : Surface*
+  fun load_surface = SDL_LoadSurface(file : LibC::Char*) : Surface*
   fun load_bmp_io = SDL_LoadBMP_IO(src : IOStream*, closeio : CBool) : Surface*
   fun load_bmp = SDL_LoadBMP(file : LibC::Char*) : Surface*
   fun save_bmp_io = SDL_SaveBMP_IO(surface : Surface*, dst : IOStream*, closeio : CBool) : CBool
@@ -4437,6 +4457,7 @@ lib LibSDL
   PROP_DISPLAY_HDR_ENABLED_BOOLEAN = "SDL.display.HDR_enabled"
   PROP_DISPLAY_KMSDRM_PANEL_ORIENTATION_NUMBER = "SDL.display.KMSDRM.panel_orientation"
   PROP_DISPLAY_WAYLAND_WL_OUTPUT_POINTER = "SDL.display.wayland.wl_output"
+  PROP_DISPLAY_WINDOWS_HMONITOR_POINTER = "SDL.display.windows.hmonitor"
   PROP_WINDOW_CREATE_ALWAYS_ON_TOP_BOOLEAN = "SDL.window.create.always_on_top"
   PROP_WINDOW_CREATE_BORDERLESS_BOOLEAN = "SDL.window.create.borderless"
   PROP_WINDOW_CREATE_CONSTRAIN_POPUP_BOOLEAN = "SDL.window.create.constrain_popup"
@@ -4466,6 +4487,7 @@ lib LibSDL
   PROP_WINDOW_CREATE_Y_NUMBER = "SDL.window.create.y"
   PROP_WINDOW_CREATE_COCOA_WINDOW_POINTER = "SDL.window.create.cocoa.window"
   PROP_WINDOW_CREATE_COCOA_VIEW_POINTER = "SDL.window.create.cocoa.view"
+  PROP_WINDOW_CREATE_WINDOWSCENE_POINTER = "SDL.window.create.uikit.windowscene"
   PROP_WINDOW_CREATE_WAYLAND_SURFACE_ROLE_CUSTOM_BOOLEAN = "SDL.window.create.wayland.surface_role_custom"
   PROP_WINDOW_CREATE_WAYLAND_CREATE_EGL_WINDOW_BOOLEAN = "SDL.window.create.wayland.create_egl_window"
   PROP_WINDOW_CREATE_WAYLAND_WL_SURFACE_POINTER = "SDL.window.create.wayland.wl_surface"
@@ -4473,7 +4495,6 @@ lib LibSDL
   PROP_WINDOW_CREATE_WIN32_PIXEL_FORMAT_HWND_POINTER = "SDL.window.create.win32.pixel_format_hwnd"
   PROP_WINDOW_CREATE_X11_WINDOW_NUMBER = "SDL.window.create.x11.window"
   PROP_WINDOW_CREATE_EMSCRIPTEN_CANVAS_ID_STRING = "SDL.window.create.emscripten.canvas_id"
-  PROP_WINDOW_CREATE_EMSCRIPTEN_FILL_DOCUMENT_BOOLEAN = "SDL.window.create.emscripten.fill_document"
   PROP_WINDOW_CREATE_EMSCRIPTEN_KEYBOARD_ELEMENT_STRING = "SDL.window.create.emscripten.keyboard_element"
   PROP_WINDOW_SHAPE_POINTER = "SDL.window.shape"
   PROP_WINDOW_HDR_ENABLED_BOOLEAN = "SDL.window.HDR_enabled"
@@ -4511,7 +4532,6 @@ lib LibSDL
   PROP_WINDOW_X11_SCREEN_NUMBER = "SDL.window.x11.screen"
   PROP_WINDOW_X11_WINDOW_NUMBER = "SDL.window.x11.window"
   PROP_WINDOW_EMSCRIPTEN_CANVAS_ID_STRING = "SDL.window.emscripten.canvas_id"
-  PROP_WINDOW_EMSCRIPTEN_FILL_DOCUMENT_BOOLEAN = "SDL.window.emscripten.fill_document"
   PROP_WINDOW_EMSCRIPTEN_KEYBOARD_ELEMENT_STRING = "SDL.window.emscripten.keyboard_element"
 
   type DisplayModeData = Void
@@ -4550,6 +4570,7 @@ lib LibSDL
     TOOLTIP = 0x0000000000040000_u64
     POPUP_MENU = 0x0000000000080000_u64
     KEYBOARD_GRABBED = 0x0000000000100000_u64
+    FILL_DOCUMENT = 0x0000000000200000_u64
     VULKAN = 0x0000000010000000_u64
     METAL = 0x0000000020000000_u64
     TRANSPARENT = 0x0000000040000000_u64
@@ -4714,6 +4735,7 @@ lib LibSDL
   fun set_window_bordered = SDL_SetWindowBordered(window : Window*, bordered : CBool) : CBool
   fun set_window_resizable = SDL_SetWindowResizable(window : Window*, resizable : CBool) : CBool
   fun set_window_always_on_top = SDL_SetWindowAlwaysOnTop(window : Window*, on_top : CBool) : CBool
+  fun set_window_fill_document = SDL_SetWindowFillDocument(window : Window*, fill : CBool) : CBool
   fun show_window = SDL_ShowWindow(window : Window*) : CBool
   fun hide_window = SDL_HideWindow(window : Window*) : CBool
   fun raise_window = SDL_RaiseWindow(window : Window*) : CBool
